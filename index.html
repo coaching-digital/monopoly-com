@@ -1,0 +1,1242 @@
+<style>
+
+  :root {
+    --bg-dark: #0f172a; --panel-bg: #1e293b;
+    --rouge: #ef4444; --bleu: #3b82f6; --vert: #22c55e; --jaune: #f1c40f;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #000; color: white; overflow: hidden; }
+
+  #game-container { display: flex; height: 100vh; width: 100vw; }
+
+  #board-container {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    background: #111827; padding: 10px; margin: 0; overflow: hidden;
+  }
+
+  /* PLATEAU RECTANGULAIRE 13x9 */
+  #board {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 3px;
+    width: 100%;
+    height: 100%;
+    max-height: 98vh;
+    background: #1e293b; padding: 4px; border-radius: 8px; border: 3px solid #475569;
+  }
+
+  .center-zone {
+    grid-area: 2 / 2 / 9 / 13;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(15, 23, 42, 0.95); border-radius: 4px; border: 2px dashed #475569;
+    z-index: 1;
+  }
+
+  .game-title {
+  font-size: 7vh;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  margin-bottom: 2vh;
+  font-weight: 900;
+}
+
+
+  .pot-display {
+    background: #0f172a; padding: 2vh 3vw; border-radius: 15px; border: 3px solid #f1c40f; text-align: center; margin-top: 10px;
+  }
+  .pot-label { text-transform: uppercase; color: #94a3b8; font-size: 1.2rem; }
+  .pot-amount { font-size: 5rem; color: #00a349; font-weight: 900; display: block; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 280px; background: #020617; padding: 15px; border-left: 2px solid #334155;
+    display: flex; flex-direction: column; z-index: 10; flex-shrink: 0;
+  }
+
+  .dice-container {
+    margin: 10px auto; width: 80px; height: 80px;
+    background: white; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem; color: #1e293b; font-weight: bold;
+    border: 5px solid #38bdf8; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+  }
+  .dice-rolling { animation: spin 0.4s infinite linear; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  .game-timer-display {
+    background: #1e293b; color: #ef4444; font-family: monospace; font-size: 2rem; font-weight: bold;
+    padding: 10px; border-radius: 8px; text-align: center; margin-top: auto; border: 2px solid #ef4444;
+  }
+  .end-game-btn {
+    background: #450a0a; color: #f87171; width: 100%; padding: 10px; margin-top: 10px;
+    border: 1px solid #991b1b; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase;
+  }
+
+  /* CASES */
+  .case {
+    background: white; color: #1e293b; border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: clamp(0.7rem, 1.1vw, 1.2rem);
+    font-weight: 900; text-align: center; cursor: pointer; padding: 2px; position: relative;
+    border: 1px solid #94a3b8; line-height: 1; overflow: hidden;
+  }
+  .case.special { background: #cbd5e1; border: none; font-size: clamp(0.8rem, 1.3vw, 1.4rem); }
+  .case.ms { background: var(--rouge); color: white; border: none; }
+  .case.chance { background: var(--jaune); color: #333; border: none; }
+  .case.commu { background: #3b82f6; color: white; border: none; }
+  .case.prison { background: #475569; color: white; border: 2px solid #000; }
+
+  .shares-container { display: flex; gap: 2px; margin-top: 4px; height: 10px; justify-content: center; width: 100%; }
+  .share-slot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; border: 1px solid #64748b; }
+
+  /* TEAM CARD & BOUTON LANCER */
+  .team-card { background: var(--panel-bg); padding: 12px; border-radius: 12px; margin-bottom: 10px; border-left: 8px solid #444; transition: 0.3s; }
+  .team-card.active { border-left-color: white; background: #334155; transform: scale(1.02); box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+ 
+
+.team-cap {
+  font-size: 2,2rem;
+  font-weight: 900;
+  margin-top: 6px;
+}
+
+
+  .btn-roll {
+    width: 100%; margin-top: 10px; padding: 12px; border: none; border-radius: 10px;
+    background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+    color: white; font-weight: 900; cursor: pointer; font-size: 1.1rem;
+    box-shadow: 0 4px 0 #0369a1, 0 8px 15px rgba(0,0,0,0.3);
+    transition: all 0.1s ease;
+    text-transform: uppercase; letter-spacing: 1px;
+    animation: pulseActive 1.5s infinite;
+  }
+  .btn-roll:hover { transform: translateY(-1px); box-shadow: 0 5px 0 #0369a1, 0 10px 20px rgba(0,0,0,0.4); }
+  .btn-roll:active { transform: translateY(3px); box-shadow: 0 1px 0 #0369a1; }
+
+  @keyframes pulseActive {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
+    100% { filter: brightness(1); }
+  }
+
+  .pawn { width: 34px; height: 34px; border-radius: 50%; position: absolute; border: 3px solid white; z-index: 100; transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 5px 10px rgba(0,0,0,0.7); }
+
+  /* MODALE */
+  #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(5px); }
+  #modal-content { background: white; color: #1e293b; padding: 40px; border-radius: 20px; width: 650px; text-align: center; position: relative; box-shadow: 0 0 100px rgba(0,0,0,0.8); }
+  .btn-action { width: 100%; padding: 20px; margin: 10px 0; border: none; border-radius: 12px; color: white; font-weight: 900; cursor: pointer; font-size: 1.3rem; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
+
+  .quiz-box { background:#f1f5f9; padding:20px; border-radius:12px; margin:20px 0; border-left:8px solid #38bdf8; text-align:left; font-style:italic; font-size: 1.5rem; line-height: 1.4; color: #0f172a; }
+  .timer-box { font-size: 3rem; font-weight: 900; color: #ef4444; border: 5px solid #ef4444; display: inline-block; padding: 10px 30px; border-radius: 50px; margin-bottom: 20px; animation: pulse 1s infinite; }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+  #setup-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+  .setup-container { background: #1e293b; padding: 40px; border-radius: 20px; width: 700px; border: 3px solid #38bdf8; text-align: center; }
+  .student-badge { background: #3b82f6; color: white; padding: 10px 30px; border-radius: 50px; font-size: 1.8rem; margin-bottom: 20px; display: inline-block; font-weight: bold; border: 3px solid white; }
+  .hidden { display: none !important; }
+
+  /* NOUVEL OVERLAY THEME */
+  #theme-overlay { position: fixed; inset: 0; background: #0f172a; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+  /* LIQUIDATION : cases sélectionnées */
+  .case.liquidation-pick {
+    outline: 4px solid #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.25);
+  }
+
+</style>
+
+<div id="setup-overlay">
+  <div class="setup-container">
+    <h1 style="color:#FFFFFF; margin-top:0; font-size:3rem;">MONOPOLY NDRC</h1>
+    <div style="text-align:left; display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+      <div><label style="color:#ef4444;">🟥 ROUGE</label><textarea id="input-rouge" style="width:100%;height:60px;"></textarea></div>
+      <div><label style="color:#3b82f6;">🟦 BLEUE</label><textarea id="input-bleu" style="width:100%;height:60px;"></textarea></div>
+      <div><label style="color:#22c55e;">🟩 VERTE</label><textarea id="input-vert" style="width:100%;height:60px;"></textarea></div>
+      <div><label style="color:#f1c40f;">🟨 JAUNE</label><textarea id="input-jaune" style="width:100%;height:60px;"></textarea></div>
+    </div>
+    <button onclick="window.initGame()" style="background:#22c55e; color:white; padding:15px 50px; font-size:1.8rem; font-weight:900; border-radius:50px; cursor:pointer; margin-top:25px; border:none;">C'EST PARTI ! 🚀</button>
+  </div>
+</div>
+
+<!-- NOUVEL ECRAN : CHOIX DU THEME -->
+<div id="theme-overlay" class="hidden">
+  <div class="setup-container">
+    <h1 style="color:#FFFFFF; margin-top:0; font-size:2.2rem;">Choisir le thème de la partie</h1>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+      <button class="btn-action" style="background:#3b82f6" onclick="window.selectTheme('communication.csv','Communication digitale')">Communication digitale</button>
+      <button class="btn-action" style="background:#22c55e" onclick="window.selectTheme('ecommerce.csv','E-commerce')">E-commerce</button>
+      <button class="btn-action" style="background:#f59e0b" onclick="window.selectTheme('crc.csv','Centre de relation client')">Centre de relation client</button>
+      <button class="btn-action" style="background:#a855f7" onclick="window.selectTheme('wordpress.csv','WordPress')">WordPress</button>
+      <button class="btn-action" style="background:#ef4444" onclick="window.selectTheme('prestashop.csv','PrestaShop')">PrestaShop</button>
+      <button class="btn-action" style="background:#0ea5e9" onclick="window.selectTheme('programme-entier-ndrc.csv','100% NDRC')">100% NDRC</button>
+    </div>
+
+  
+  </div>
+</div>
+
+<div id="game-container">
+  <div id="board-container"><div id="board"><div class="center-zone"><div class="game-title">MONOPOLY NDRC</div><div class="pot-display"><div class="pot-label">Cagnotte</div><span class="pot-amount" id="pot-amount">0 €</span></div></div></div></div>
+
+  <div id="sidebar">
+    <h3 style="color:#38bdf8; text-align:center; margin:0 0 10px 0;">CLASSEMENT</h3>
+    <div id="team-status-container"></div>
+    <div style="text-align:center; margin:10px 0;"><div id="visual-dice" class="dice-container">🎲</div></div>
+
+    <div style="margin-top:auto;">
+     
+
+      <div class="game-timer-display" id="global-timer">01:00:00</div>
+      <button class="end-game-btn" onclick="window.finishGame()">🏁 FINIR LA PARTIE</button>
+      <p style="text-align:center; color:#64748b; margin-top:10px;">Au tour de : <b id="current-team-display" style="color:white;">-</b></p>
+    </div>
+  </div>
+</div>
+
+<div id="modal-overlay" class="hidden">
+  <div id="modal-content">
+    <button onclick="window.closeModal()" style="font-size:3rem; position:absolute; top:10px; right:20px; background:none; border:none; color:#94a3b8; cursor:pointer;">&times;</button>
+    <h2 id="modal-title"></h2>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+  window.teams = [
+    { name: "Rouge", color: "#ef4444", pos: 0, capital: 10000, prison: 0, players: [] },
+    { name: "Bleu", color: "#3b82f6", pos: 0, capital: 10000, prison: 0, players: [] },
+    { name: "Vert", color: "#22c55e", pos: 0, capital: 10000, prison: 0, players: [] },
+    { name: "Jaune", color: "#f1c40f", pos: 0, capital: 10000, prison: 0, players: [] }
+  ];
+
+  window.initGame = () => {
+    ['input-rouge', 'input-bleu', 'input-vert', 'input-jaune'].forEach((id, idx) => {
+      const names = document.getElementById(id).value.split(',').map(n => n.trim()).filter(n => n !== "");
+      window.teams[idx].players = names.length > 0 ? names : [`Équipe ${window.teams[idx].name}`];
+    });
+
+    // On garde l'écran joueurs tel quel, puis on affiche l'écran de thème
+    document.getElementById('setup-overlay').style.display = 'none';
+    document.getElementById('theme-overlay').classList.remove('hidden');
+
+    window.updateUI();
+  };
+
+  function getRandomStudent(teamIdx) {
+    const players = window.teams[teamIdx].players;
+    return players[Math.floor(Math.random() * players.length)].toUpperCase();
+  }
+
+  // ============================================================
+  // QUESTIONS : chargement CSV (selon thème choisi)
+  // ============================================================
+
+  let QUESTIONS_CSV_URL = null;  // défini au moment du thème
+  let currentThemeName = "";
+
+  let questionBank = [];
+  let availableQuestions = [];
+  let questionsReady = false;
+
+  function parseCsvOneColumn(text) {
+    const lines = (text || "").split(/\r?\n/).filter(l => l.trim() !== "");
+    if (lines.length === 0) return [];
+
+    function decodeCell(line) {
+      let s = line.trim();
+      if (s.startsWith('"')) {
+        if (s.endsWith('"')) s = s.slice(1, -1);
+        s = s.replace(/""/g, '"');
+      }
+      return s.trim();
+    }
+
+    const header = decodeCell(lines[0]).toLowerCase();
+    const start = header.includes("question") ? 1 : 0;
+
+    const qs = [];
+    for (let i = start; i < lines.length; i++) {
+      const q = decodeCell(lines[i]);
+      if (q) qs.push(q);
+    }
+    return qs;
+  }
+
+  function rebuildBag() {
+    availableQuestions = [...questionBank];
+  }
+
+  async function refreshQuestionsInternal(showAlert) {
+    try {
+      if (!QUESTIONS_CSV_URL) throw new Error("Thème non sélectionné");
+
+      const url = `${QUESTIONS_CSV_URL}?v=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const qs = parseCsvOneColumn(text);
+
+      if (!qs.length) throw new Error("CSV vide ou invalide");
+
+      questionBank = qs;
+      rebuildBag();
+      questionsReady = true;
+
+     // (popup supprimé)
+
+    } catch (e) {
+      questionsReady = false;
+      console.warn("Impossible de charger le CSV de questions", e);
+      if (showAlert) alert("⚠️ Impossible de charger le CSV (thème non choisi ou fichier absent/vide).");
+    }
+  }
+
+
+  window.selectTheme = async (fileName, displayName) => {
+    QUESTIONS_CSV_URL = "./" + fileName;
+    currentThemeName = displayName;
+
+    await refreshQuestionsInternal(true);
+
+    // On ferme l'overlay thème, on arrive au plateau
+    document.getElementById('theme-overlay').classList.add('hidden');
+    window.updateUI();
+  };
+
+  function getUniqueQuestion() {
+    if (!questionsReady || questionBank.length === 0) return null;
+    if (availableQuestions.length === 0) rebuildBag();
+    return availableQuestions.splice(Math.floor(Math.random() * availableQuestions.length), 1)[0];
+  }
+
+  function ensureQuestionOrPrompt() {
+  const q = getUniqueQuestion();
+  if (q) return q;
+
+  const extra = !QUESTIONS_CSV_URL
+    ? `<p style="color:#64748b;margin-top:10px;">Choisis d'abord un <b>thème</b>.</p>
+       <button class="btn-action" style="background:#0f172a;color:white" onclick="document.getElementById('theme-overlay').classList.remove('hidden')">🎯 CHOISIR UN THÈME</button>`
+    : `<p style="color:#64748b;margin-top:10px;">CSV vide / non chargé pour <b>${currentThemeName}</b>.</p>
+       <button class="btn-action" style="background:#0f172a;color:white" onclick="window.location.reload()">🔄 RECHARGER</button>`;
+
+  window.openModal("📥 QUESTIONS INDISPONIBLES", `
+    <p style="font-size:1.5rem">Impossible d'afficher une question.</p>
+    ${extra}
+    <button class="btn-action" style="background:#64748b" onclick="window.closeModal()">OK</button>
+  `);
+  return null;
+}
+  // ============================================================
+  // LIQUIDATION OPTIONNELLE (seuil 500€) - VENTE DES PARTS À 50%
+  // ============================================================
+
+  window.liquidationMode = false;
+  window.liquidationTeamIdx = null;
+  window.liquidationSelected = new Set(); // positions sélectionnées
+
+  function teamOwnedPositions(teamIdx) {
+    const res = [];
+    for (let pos = 0; pos < window.corporateShares.length; pos++) {
+      const shares = window.corporateShares[pos];
+      const count = shares.filter(x => x === teamIdx).length;
+      if (count > 0) res.push({ pos, count });
+    }
+    return res;
+  }
+// ============================================================
+// FAILLITE / LIQUIDATION BLOQUANTE
+// ============================================================
+window.liquidationMode = false;          // true = on est en phase vente
+window.liquidationTeamIdx = null;        // équipe concernée
+window.liquidationAwaitPick = false;     // true = l'équipe doit cliquer une case
+window._turnPromptShownFor = null;       // évite de ré-afficher la popup 50 fois
+
+function isBankrupt(idx) {
+  return window.teams[idx].capital <= 0;
+}
+
+function startBankruptcyTurn(teamIdx) {
+  window.liquidationMode = true;
+  window.liquidationTeamIdx = teamIdx;
+  window.liquidationAwaitPick = false;
+
+  window.openModal("💥 FAILLITE", `
+    <p style="font-size:1.6rem;font-weight:900;color:#ef4444;margin-bottom:10px;">
+      Vous êtes en faillite.
+    </p>
+    <p style="font-size:1.2rem;color:#334155;margin-bottom:20px;">
+      Vendez des parts pour continuer à jouer.
+    </p>
+    <button class="btn-action" style="background:var(--vert)" onclick="window.beginLiquidationPick()">
+      ✅ VENDRE DES PARTS
+    </button>
+    <p style="color:#64748b;margin-top:10px;font-size:1rem;">
+      (Vous devrez cliquer une entreprise où vous possédez des parts.)
+    </p>
+  `);
+}
+
+window.beginLiquidationPick = () => {
+  window.liquidationAwaitPick = true;
+  window.closeModal(); // important : on ferme la modale pour pouvoir cliquer sur le plateau
+};
+
+// appelé quand on clique une case pendant la liquidation
+window.handleLiquidationCaseClick = (pos) => {
+  const teamIdx = window.liquidationTeamIdx;
+
+  // sécurité
+  if (!window.liquidationMode || teamIdx === null) return;
+  if (!window.liquidationAwaitPick) return;
+
+  // il faut une entreprise (pas spécial, pas chance, etc.)
+  if (boardData[pos].type) {
+    window.openModal("⛔ CASE INVALIDE", `
+      <p style="font-size:1.4rem;">Choisis une <b>entreprise</b> (une case achetable).</p>
+      <button class="btn-action" style="background:#64748b" onclick="window.beginLiquidationPick()">OK</button>
+    `);
+    return;
+  }
+
+  // il faut posséder au moins 1 part sur cette entreprise
+  const shares = window.corporateShares[pos];
+  const ownedCount = shares.filter(x => x === teamIdx).length;
+  if (ownedCount <= 0) {
+    window.openModal("⛔ PAS DE PART", `
+      <p style="font-size:1.4rem;">Vous ne possédez aucune part sur <b>${boardData[pos].name}</b>.</p>
+      <button class="btn-action" style="background:#64748b" onclick="window.beginLiquidationPick()">OK</button>
+    `);
+    return;
+  }
+
+  // OK -> question
+  window.liquidationAwaitPick = false;
+
+  const q = ensureQuestionOrPrompt();
+  if (!q) { 
+    // si pas de questions, on remet le mode sélection
+    window.liquidationAwaitPick = true;
+    return; 
+  }
+
+  window.openModal("💸 LIQUIDATION - QUESTION", `
+    <div id="timer-val" class="timer-box">30s</div>
+    <p style="font-size:1.2rem;color:#334155;">
+      Vente d’1 part de <b>${boardData[pos].name}</b><br>
+      Valeur rachat : <b>${Math.floor(boardData[pos].price * 0.5)}€</b> (50%)
+    </p>
+    <div class="quiz-box">${q}</div>
+    <button class="btn-action" style="background:var(--vert)" onclick="window.resolveLiquidation(${teamIdx}, ${pos}, true)">JUSTE ✅</button>
+    <button class="btn-action" style="background:var(--rouge)" onclick="window.resolveLiquidation(${teamIdx}, ${pos}, false)">FAUX ❌</button>
+  `);
+
+  window.startQTimer(30, () => window.resolveLiquidation(teamIdx, pos, false));
+};
+
+window.resolveLiquidation = (teamIdx, pos, success) => {
+  clearInterval(window.questionTimer);
+
+  if (!success) {
+    // faux -> fin du tour, on sort du mode liquidation
+    window.liquidationMode = false;
+    window.liquidationTeamIdx = null;
+    window.liquidationAwaitPick = false;
+
+    window.openModal("❌ LIQUIDATION ÉCHOUÉE", `
+      <p style="font-size:1.5rem;color:#ef4444;font-weight:900;">Mauvaise réponse : fin du tour.</p>
+      <button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">OK</button>
+    `);
+    return;
+  }
+
+  // juste -> on vend 1 part à 50%
+  const arr = window.corporateShares[pos];
+  const idxInArr = arr.indexOf(teamIdx);
+  if (idxInArr !== -1) arr.splice(idxInArr, 1);
+
+  const gain = Math.floor(boardData[pos].price * 0.5);
+  window.teams[teamIdx].capital += gain;
+
+  window.updateUI();
+
+  // encore en faillite ? -> recommencer
+  if (isBankrupt(teamIdx)) {
+    window.openModal("✅ PART VENDUE", `
+      <p style="font-size:1.4rem;">+${gain}€</p>
+      <p style="color:#ef4444;font-weight:900;">Toujours en faillite : vendez encore.</p>
+      <button class="btn-action" style="background:var(--vert)" onclick="window.beginLiquidationPick()">VENDRE UNE AUTRE PART</button>
+    `);
+    return;
+  }
+
+  // plus en faillite -> on quitte liquidation, l'équipe peut jouer son tour
+  window.liquidationMode = false;
+  window.liquidationTeamIdx = null;
+  window.liquidationAwaitPick = false;
+
+  window.openModal("✅ LIQUIDATION RÉUSSIE", `
+    <p style="font-size:1.4rem;">+${gain}€</p>
+    <p style="color:#16a34a;font-weight:900;">Vous pouvez continuer votre tour et lancer le dé.</p>
+    <button class="btn-action" style="background:var(--vert)" onclick="window.closeModal()">OK</button>
+  `);
+};
+
+  function setCasePickVisual(pos, picked) {
+    const el = document.getElementById(`case-${pos}`);
+    if (!el) return;
+    if (picked) el.classList.add("liquidation-pick");
+    else el.classList.remove("liquidation-pick");
+  }
+
+  function clearAllPickVisual() {
+    for (let i = 0; i < 40; i++) setCasePickVisual(i, false);
+  }
+
+  function renderLiquidationModal() {
+    const t = window.teams[window.liquidationTeamIdx];
+    const owned = teamOwnedPositions(window.liquidationTeamIdx);
+
+    if (!owned.length) {
+      window.openModal("💸 LIQUIDATION", `
+        <p style="font-size:1.5rem">Vous ne possédez aucune part à vendre.</p>
+        <button class="btn-action" style="background:#64748b" onclick="window.exitLiquidation()">OK</button>
+      `);
+      return;
+    }
+
+    let listHtml = owned.map(({pos, count}) => {
+      const price = boardData[pos].price || 0;
+      const refundEach = Math.floor(price * 0.5);
+      const picked = window.liquidationSelected.has(pos);
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #e2e8f0;">
+          <div style="text-align:left;">
+            <b>${boardData[pos].name}</b><br>
+            <span style="color:#64748b">Parts: ${count} • Rachat: ${refundEach}€ / part</span>
+          </div>
+          <button class="btn-action" style="width:auto;padding:10px 14px;font-size:1rem;background:${picked ? '#f59e0b' : '#334155'}"
+            onclick="window.toggleLiquidationPick(${pos})">
+            ${picked ? 'SÉLECTIONNÉ' : 'CHOISIR'}
+          </button>
+        </div>
+      `;
+    }).join("");
+
+    window.openModal("💸 LIQUIDATION (vente à 50%)", `
+      <p style="font-size:1.4rem;margin-top:0">
+        Équipe <b style="color:${t.color}">${t.name}</b> — Capital actuel : <b>${t.capital}€</b><br>
+        Cliquez sur les entreprises ci-dessous (ou sur le plateau) pour sélectionner, puis vendez.
+      </p>
+
+      <div style="max-height:320px;overflow:auto;border:2px solid #e2e8f0;border-radius:12px;">
+        ${listHtml}
+      </div>
+
+      <button class="btn-action" style="background:#22c55e" onclick="window.sellSelectedShares()">
+        💰 VENDRE LES PARTS SÉLECTIONNÉES
+      </button>
+
+      <button class="btn-action" style="background:#64748b" onclick="window.exitLiquidation()">
+        ✅ TERMINER (continuer la partie)
+      </button>
+    `);
+  }
+
+  window.enterLiquidation = (teamIdx) => {
+    window.liquidationMode = true;
+    window.liquidationTeamIdx = teamIdx;
+    window.liquidationSelected = new Set();
+    clearAllPickVisual();
+    renderLiquidationModal();
+  };
+
+  window.exitLiquidation = () => {
+    clearAllPickVisual();
+    window.liquidationMode = false;
+    window.liquidationTeamIdx = null;
+    window.liquidationSelected = new Set();
+    window.closeModal();
+    window.updateUI();
+  };
+
+  window.toggleLiquidationPick = (pos) => {
+    if (!window.liquidationMode) return;
+
+    const teamIdx = window.liquidationTeamIdx;
+    const shares = window.corporateShares[pos];
+    const count = shares.filter(x => x === teamIdx).length;
+    if (count <= 0) return;
+
+    if (window.liquidationSelected.has(pos)) {
+      window.liquidationSelected.delete(pos);
+      setCasePickVisual(pos, false);
+    } else {
+      window.liquidationSelected.add(pos);
+      setCasePickVisual(pos, true);
+    }
+    renderLiquidationModal();
+  };
+
+  window.sellSelectedShares = () => {
+    const teamIdx = window.liquidationTeamIdx;
+    if (teamIdx === null) return;
+
+    const selected = Array.from(window.liquidationSelected);
+    if (!selected.length) {
+      alert("Sélectionnez au moins une entreprise à vendre.");
+      return;
+    }
+
+    let totalRefund = 0;
+
+    selected.forEach((pos) => {
+      const price = boardData[pos].price || 0;
+      const refundEach = Math.floor(price * 0.5);
+
+      const before = window.corporateShares[pos].length;
+      window.corporateShares[pos] = window.corporateShares[pos].filter(x => x !== teamIdx);
+      const after = window.corporateShares[pos].length;
+
+      const removed = before - after;
+      if (removed > 0) totalRefund += removed * refundEach;
+
+      setCasePickVisual(pos, false);
+    });
+
+    window.teams[teamIdx].capital += totalRefund;
+    window.liquidationSelected = new Set();
+    window.updateUI();
+
+    window.openModal("✅ VENTE EFFECTUÉE", `
+      <p style="font-size:1.8rem;font-weight:900;color:#22c55e">+${totalRefund}€</p>
+      <p style="font-size:1.4rem">Capital actuel : <b>${window.teams[teamIdx].capital}€</b></p>
+      <button class="btn-action" style="background:#64748b" onclick="renderLiquidationModal()">Continuer</button>
+    `);
+  };
+
+  // Gestion clic plateau : en liquidation => sélection / sinon => recap
+  window.handleBoardClick = (pos) => {
+    if (window.liquidationMode) {
+      window.toggleLiquidationPick(pos);
+    } else {
+      window.showRecap(pos);
+    }
+  };
+
+  // Popup automatique quand une équipe arrive à 500€ ou moins au début de son tour
+  function checkOptionalLiquidationAtTurnStart() {
+    const idx = window.currentTurn;
+    const team = window.teams[idx];
+
+    // si déjà en mode liquidation on ne relance pas une popup
+    if (window.liquidationMode) return;
+
+    // seuil : 500€ ou moins
+    if (team.capital > 500) return;
+
+    // s'il n'a rien à vendre, inutile
+    const owned = teamOwnedPositions(idx);
+    if (!owned.length) return;
+
+    window.openModal("⚠️ LIQUIDATION OPTIONNELLE", `
+      <p style="font-size:1.6rem">
+        Équipe <b style="color:${team.color}">${team.name}</b> : vous êtes à <b>${team.capital}€</b>.<br>
+        Souhaitez-vous vendre des parts (rachat à <b>50%</b>) ?
+      </p>
+      <button class="btn-action" style="background:#22c55e" onclick="window.enterLiquidation(${idx})">OUI, VENDRE DES PARTS</button>
+      <button class="btn-action" style="background:#64748b" onclick="window.closeModal()">NON</button>
+    `);
+  }
+
+
+  // ============================================================
+
+  window.currentTurn = 0; window.communityPot = 0; window.isMoving = false; window.questionTimer = null; window.gameInterval = null; window.gameTimeLeft = 3600; window.gameStarted = false; window.corporateShares = Array(40).fill(null).map(() => []);
+
+  const boardData = [
+    {name: "DÉPART", type: "special"}, {name: "SHOPIFY", price: 200}, {name: "COMMU", type: "commu"}, {name: "WIX", price: 150}, {name: "MS 15%", type: "ms", val: 0.15}, {name: "CHANCE", type: "chance"}, {name: "AMAZON", price: 600}, {name: "MICROSOFT", price: 650}, {name: "MS 20%", type: "ms", val: 0.20}, {name: "CHANCE", type: "chance"}, {name: "PRISON", type: "prison"},
+    {name: "LVMH", price: 900}, {name: "COMMU", type: "commu"}, {name: "APPLE", price: 800}, {name: "MS 10%", type: "ms", val: 0.10}, {name: "GOOGLE", price: 700}, {name: "SPOTIFY", price: 500}, {name: "CHANCE", type: "chance"}, {name: "MS 15%", type: "ms", val: 0.15}, {name: "META", price: 750}, {name: "PARC", type: "special"},
+    {name: "NETFLIX", price: 550}, {name: "TIKTOK", price: 400}, {name: "UBER", price: 300}, {name: "MS 20%", type: "ms", val: 0.20}, {name: "COMMU", type: "commu"}, {name: "AIRBNB", price: 450}, {name: "CHANCE", type: "chance"}, {name: "TWITTER", price: 450}, {name: "MS 5%", type: "ms", val: 0.05}, {name: "POLICE", type: "special"},
+    {name: "SEPHORA", price: 350}, {name: "DIOR", price: 550}, {name: "SALESFORCE", price: 400}, {name: "HUBSPOT", price: 450}, {name: "CHANCE", type: "chance"}, {name: "MS 15%", type: "ms", val: 0.15}, {name: "ZENDESK", price: 200}, {name: "SONY", price: 500}, {name: "ADOBE", price: 600}
+  ];
+
+  const coords = [
+    [1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],[12,1],[13,1],
+    [13,2],[13,3],[13,4],[13,5],[13,6],[13,7],[13,8],
+    [13,9],[12,9],[11,9],[10,9],[9,9],[8,9],[7,9],[6,9],[5,9],[4,9],[3,9],[2,9],[1,9],
+    [1,8],[1,7],[1,6],[1,5],[1,4],[1,3],[1,2]
+  ];
+
+  window.onload = () => {
+    const board = document.getElementById('board');
+    boardData.forEach((data, i) => {
+      const div = document.createElement('div');
+      div.className = `case ${data.type || 'entreprise'}`;
+      div.style.gridColumn = coords[i][0]; div.style.gridRow = coords[i][1];
+      div.id = `case-${i}`;
+      div.innerHTML = `<span>${data.name}</span>${data.price ? `<br>${data.price}€` : ''}`;
+      if (!data.type) div.innerHTML += `<div class="shares-container" id="shares-${i}"></div>`;
+div.onclick = () => window.handleBoardClick(i);
+      board.appendChild(div);
+    });
+
+    window.teams.forEach((t, i) => {
+      const p = document.createElement('div'); p.className = 'pawn'; p.id = `pawn-${i}`;
+      p.style.backgroundColor = t.color; document.body.appendChild(p);
+    });
+
+    window.updateUI();
+  };
+
+  window.startGlobalTimer = () => {
+    window.gameInterval = setInterval(() => {
+      window.gameTimeLeft--;
+      const h = Math.floor(window.gameTimeLeft / 3600).toString().padStart(2,'0');
+      const m = Math.floor((window.gameTimeLeft % 3600) / 60).toString().padStart(2,'0');
+      const s = (window.gameTimeLeft % 60).toString().padStart(2,'0');
+      document.getElementById('global-timer').innerText = `${h}:${m}:${s}`;
+      if(window.gameTimeLeft <= 0) window.finishGame();
+    }, 1000);
+  };
+
+window.finishGame = () => {
+  clearInterval(window.gameInterval);
+
+  // 1) Score principal : entreprises complètes (3 parts identiques)
+  let completeScores = [0, 0, 0, 0];
+  window.corporateShares.forEach(shares => {
+    if (shares.length === 3 && shares[0] === shares[1] && shares[1] === shares[2]) {
+      completeScores[shares[0]]++;
+    }
+  });
+
+  const maxComplete = Math.max(...completeScores);
+
+  // 2) Fallback : si aucune entreprise complète, on compte le total de parts
+  let mode = "complete";
+  let finalScores = completeScores;
+
+  if (maxComplete === 0) {
+    mode = "shares";
+    let shareScores = [0, 0, 0, 0];
+    window.corporateShares.forEach(shares => {
+      shares.forEach(teamIdx => {
+        if (teamIdx !== undefined && teamIdx !== null) shareScores[teamIdx]++;
+      });
+    });
+    finalScores = shareScores;
+  }
+
+  const maxScore = Math.max(...finalScores);
+  const winners = window.teams.filter((t, i) => finalScores[i] === maxScore);
+
+  // UI message selon la règle utilisée
+  const subtitle =
+    mode === "complete"
+      ? "Victoire au nombre d'entreprises complètes"
+      : "Aucune entreprise complète : victoire au nombre total de parts";
+
+  let html = `
+    <div style="background:#f1c40f;color:#1e293b;padding:25px;font-size:2.5rem;font-weight:900;border-radius:15px;margin-bottom:15px;text-transform:uppercase;">
+      ${winners.length > 1 ? "ÉGALITÉ !" : `VICTOIRE : ${winners[0].name.toUpperCase()} !`}
+    </div>
+    <div style="color:#475569;font-weight:900;margin-bottom:25px;">${subtitle}</div>
+  `;
+
+  // Affichage des scores
+  window.teams.forEach((t, i) => {
+    const label = mode === "complete" ? "Ent. complètes" : "Parts totales";
+    html += `
+      <div style="display:flex;justify-content:space-between;padding:15px;border-bottom:2px solid #eee;font-size:1.4rem;color:${t.color}">
+        <span>Équipe ${t.name}</span>
+        <b>${finalScores[i]} ${label}</b>
+      </div>`;
+  });
+
+  html += `
+    <button onclick="window.location.reload()" style="background:#22c55e;color:white;padding:15px 40px;font-size:1.5rem;font-weight:900;border-radius:50px;cursor:pointer;margin-top:20px;border:none;">
+      NOUVELLE PARTIE
+    </button>
+  `;
+
+  window.openModal("🏁 FIN DE PARTIE", html);
+};
+
+
+  window.startQTimer = (seconds, callback) => {
+    if(window.questionTimer) clearInterval(window.questionTimer);
+    setTimeout(() => {
+      let left = seconds;
+      const display = document.getElementById('timer-val');
+      window.questionTimer = setInterval(() => {
+        left--; if(display) display.innerText = left + "s";
+        if(left <= 0) { clearInterval(window.questionTimer); callback(); }
+      }, 1000);
+    }, 100);
+  };
+
+  window.updatePawnVisual = (idx, pos) => {
+    const rect = document.getElementById(`case-${pos}`).getBoundingClientRect();
+    const p = document.getElementById(`pawn-${idx}`);
+    p.style.left = `${rect.left + rect.width/2 - 17 + (idx*4)}px`;
+    p.style.top  = `${rect.top  + rect.height/2 - 17 + (idx*4)}px`;
+  };
+window.rollDice = async (idx) => {
+  if (idx !== window.currentTurn || window.isMoving) return;
+  if (window.liquidationMode) return;
+  if (window.liquidationMode && idx === window.liquidationTeamIdx) return;
+  if (window.teams[idx].capital <= 0) return;
+
+  if (!window.gameStarted) {
+    window.gameStarted = true;
+    window.startGlobalTimer();
+  }
+
+  const team = window.teams[idx];
+ 
+
+    if (team.prison > 0) {
+      team.prison--;
+      window.openModal("👮 PRISON", `<p style="font-size:1.5rem">Encore ${team.prison} tour(s).</p><button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">PASSER</button>`);
+      return;
+    }
+
+    window.isMoving = true;
+    const diceEl = document.getElementById('visual-dice');
+    diceEl.classList.add('dice-rolling'); await new Promise(r => setTimeout(r, 600));
+    const roll = Math.floor(Math.random() * 6) + 1;
+    diceEl.classList.remove('dice-rolling'); diceEl.innerText = roll;
+
+    for (let i = 0; i < roll; i++) {
+      team.pos = (team.pos + 1) % 40;
+      if (team.pos === 0) {
+        let val = 0; window.corporateShares.forEach((arr, p) => { if(arr.includes(idx)) val += (boardData[p].price || 0); });
+        team.capital += Math.floor((team.capital + val) * 0.10);
+      }
+      window.updatePawnVisual(idx, team.pos); await new Promise(r => setTimeout(r, 150));
+    }
+
+    window.isMoving = false;
+
+    const data = boardData[team.pos];
+    if (data.name === "POLICE") {
+  team.pos = 10;
+  team.prison = 1;
+  window.updatePawnVisual(idx, 10);
+
+  window.openModal(
+    "👮 POLICE",
+    `<p style="font-size:1.5rem;color:red;font-weight:900">
+      FRAUDE ! Direction prison.
+     </p>
+     <button class="btn-action" style="background:var(--rouge)" onclick="window.nextTurn()">OK</button>`
+  );
+
+} else if (data.name === "PARC") {
+
+  const gain = window.communityPot;
+  window.communityPot = 0;
+  window.teams[idx].capital += gain;
+
+  window.openModal(
+    "🌳 PARC",
+    `<div style="font-size:2.2rem;font-weight:900;color:#22c55e">
+       VOUS RÉCUPÉREZ LA CAGNOTTE !
+     </div>
+     <div style="font-size:4rem;font-weight:900;margin:20px 0;">
+       +${gain}€
+     </div>
+     <button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">OK</button>`
+  );
+
+} else if (data.type === 'commu') {
+
+  const cards = [
+    { m: "Aide de l'État", val: 200 },
+    { m: "Dividendes (15%)", val: 300 },
+    { m: "Amende URSSAF", val: -200 },
+    { m: "Taxes", val: -100 }
+  ];
+
+  const c = cards[Math.floor(Math.random() * cards.length)];
+
+  team.capital += c.val;
+  if (c.val < 0) window.communityPot += Math.abs(c.val);
+
+  window.openModal(
+    "COMMUNAUTÉ",
+    `<div style="font-size:2rem;font-weight:900;color:${c.val>0?'var(--vert)':'var(--rouge)'}">
+       ${c.m}
+     </div>
+     <div style="font-size:4rem;font-weight:900;">
+       ${c.val>0?'+':''}${c.val}€
+     </div>
+     <button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">OK</button>`
+  );
+
+} else if (data.type === 'ms') {
+  window.triggerMS(idx, data.val);
+
+} else if (data.type === 'chance') {
+  window.triggerChance(idx);
+
+} else if (!data.type) {
+  window.triggerInvest(idx, team.pos);
+
+} else {
+  window.nextTurn();
+}
+};
+  window.triggerChance = (idx) => {
+    const student = getRandomStudent(idx);
+    window.openModal("⚠️ QUESTION CHANCE", `<p style="font-size:1.5rem">La question est pour :</p><div class="student-badge">👉 ${student}</div><button class="btn-action" style="background:var(--vert)" onclick="window.launchChance(${idx})">JE SUIS PRÊT(E) ➤</button>`);
+  };
+
+  window.launchChance = (idx) => {
+    const q = ensureQuestionOrPrompt();
+    if (!q) return;
+
+    window.openModal("CHANCE 🍀",
+      `<div id="timer-val" class="timer-box">30s</div>
+       <div class="quiz-box">${q}</div>
+       <button class="btn-action" style="background:var(--vert)" onclick="window.resolveChance(${idx}, true)">OUI (Relancer)</button>
+       <button class="btn-action" style="background:var(--rouge)" onclick="window.resolveChance(${idx}, false)">NON (Malus)</button>`
+    );
+    window.startQTimer(30, () => window.resolveChance(idx, false));
+  };
+
+  window.resolveChance = (idx, success) => {
+    clearInterval(window.questionTimer);
+    if (success) window.openModal("BRAVO ! 👏", `<div style="font-size:2.5rem;font-weight:900;color:var(--vert)">RÉPONSE JUSTE !</div><p>Relancez le dé immédiatement.</p><button class="btn-action" style="background:var(--vert)" onclick="window.closeModal()">RELANCER</button>`);
+    else { window.teams[idx].capital -= 150; window.communityPot += 150; window.openModal("DOMMAGE... ❌", `<div style="font-size:2rem;font-weight:900;color:var(--rouge)">MAUVAISE RÉPONSE</div><p>Amende de 150€ versée.</p><button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">OK</button>`); }
+  };
+
+  window.triggerMS = (idx, p) => {
+    let h = `<p style="font-size:1.5rem">Qui défiez-vous ? (-${p*100}%)</p>`;
+    window.teams.forEach((t, i) => { if(i !== idx) h += `<button class="btn-action" style="background:${t.color}" onclick="window.msStep2(${idx}, ${i}, ${p})">${t.name}</button>`; });
+    window.openModal("💀 MORT SUBITE", h);
+  };
+
+  window.msStep2 = (att, def, p) => {
+    const student = getRandomStudent(att);
+    window.openModal("⚠️ DÉFI", `<p style="font-size:1.5rem">L'attaque est menée par :</p><div class="student-badge">👉 ${student}</div><button class="btn-action" style="background:var(--rouge)" onclick="window.launchMs(${att}, ${def}, ${p})">LANCER ➤</button>`);
+  };
+
+  window.launchMs = (att, def, p) => {
+    const q = ensureQuestionOrPrompt();
+    if (!q) return;
+
+    document.getElementById('modal-body').innerHTML =
+      `<div id="timer-val" class="timer-box">30s</div>
+       <p style="font-size:1.5rem">Attaque contre <b>${window.teams[def].name}</b></p>
+       <div class="quiz-box">${q}</div>
+       <button class="btn-action" style="background:var(--vert)" onclick="window.resolveMS(${att}, ${def}, ${p}, true)">JUSTE ✅</button>
+       <button class="btn-action" style="background:var(--rouge)" onclick="window.resolveMS(${att}, ${def}, ${p}, false)">FAUX ❌</button>`;
+
+    window.startQTimer(30, () => window.resolveMS(att, def, p, false));
+  };
+
+  window.resolveMS = (att, def, p, success) => {
+    clearInterval(window.questionTimer);
+    const amount = Math.floor(window.teams[att].capital * p);
+    if(success) {
+      window.teams[def].capital -= amount; window.teams[att].capital += amount;
+      document.getElementById('modal-body').innerHTML = `<div style="font-size:2.5rem;font-weight:900;color:var(--vert)">DÉFI RÉUSSI !</div><div style="font-size:4rem;font-weight:900;">+${amount}€</div><button class="btn-action" onclick="window.nextTurn()">OK</button>`;
+    } else {
+      window.teams[att].capital -= amount; window.teams[def].capital += amount;
+      document.getElementById('modal-body').innerHTML = `<div style="font-size:2.5rem;font-weight:900;color:var(--rouge)">DÉFI RATÉ...</div><div style="font-size:4rem;font-weight:900;">-${amount}€</div><button class="btn-action" onclick="window.nextTurn()">OK</button>`;
+    }
+  };
+
+  window.triggerInvest = (idx, pos, justBought=false) => {
+    const data = boardData[pos]; const shares = window.corporateShares[pos];
+    let h = `<p style="font-size:1.5rem">Parts vendues : ${shares.length}/3</p>`;
+if (shares.length < 3 && !justBought)
+ h += `<button class="btn-action" style="background:var(--vert)" onclick="window.buyShareQuiz(${idx}, ${pos})">Acheter 1 part (${data.price}€)</button>`;
+    if (shares.filter(t => t === idx).length >= 1 && shares.filter(t => t !== idx).length >= 1)
+      h += `<div style="border-top:2px dashed #cbd5e1;margin-top:20px;padding-top:10px;"><p style="color:#0ea5e9;font-weight:900;font-size:1.8rem">🤝 NÉGOCIATION</p><select id="nego-target" style="width:100%;padding:15px;font-size:1.3rem;margin-bottom:15px;">${[...new Set(shares)].filter(t=>t!==idx).map(t => `<option value="${t}">Équipe ${window.teams[t].name}</option>`).join('')}</select><button class="btn-action" style="background:#f59e0b" onclick="window.negoStep1(${idx}, ${pos}, parseInt(document.getElementById('nego-target').value))">Lancer OPA</button>
+</div>`;
+    h += `<button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">Fin du tour</button>`;
+    window.openModal(data.name, h);
+  };
+
+  window.buyShare = (idx, pos) => {
+    if(window.teams[idx].capital >= boardData[pos].price) {
+      window.teams[idx].capital -= boardData[pos].price;
+      window.corporateShares[pos].push(idx);
+      window.triggerInvest(idx, pos, true);
+    } else alert("Fonds insuffisants");
+    };
+    // ============================================================
+// ACHAT CLASSIQUE : question obligatoire avant achat
+// ============================================================
+
+window.buyShareQuiz = (idx, pos) => {
+  // Vérif fonds AVANT de poser la question (sinon ça frustre)
+  const price = boardData[pos].price;
+  if (window.teams[idx].capital < price) {
+    alert("Fonds insuffisants");
+    window.nextTurn();
+    return;
+  }
+
+  const student = getRandomStudent(idx);
+
+  window.openModal(
+    "🧠 QUESTION AVANT ACHAT",
+    `<p style="font-size:1.5rem">La question est pour :</p>
+     <div class="student-badge">👉 ${student}</div>
+  
+     <button class="btn-action" style="background:var(--vert)" onclick="window.launchBuyShareQuiz(${idx}, ${pos})">JE SUIS PRÊT(E) ➤</button>`
+  );
+};
+
+window.launchBuyShareQuiz = (idx, pos) => {
+  const q = ensureQuestionOrPrompt();
+  if (!q) return;
+
+  window.openModal(
+    "🧠 ACHAT CLASSIQUE",
+    `<div id="timer-val" class="timer-box">30s</div>
+     <div class="quiz-box">${q}</div>
+     <button class="btn-action" style="background:var(--vert)" onclick="window.resolveBuyShareQuiz(${idx}, ${pos}, true)">JUSTE ✅</button>
+     <button class="btn-action" style="background:var(--rouge)" onclick="window.resolveBuyShareQuiz(${idx}, ${pos}, false)">FAUX ❌</button>`
+  );
+
+  window.startQTimer(30, () => window.resolveBuyShareQuiz(idx, pos, false));
+};
+
+window.resolveBuyShareQuiz = (idx, pos, success) => {
+  clearInterval(window.questionTimer);
+
+  if (!success) {
+    window.openModal(
+      "❌ MAUVAISE RÉPONSE",
+      `<p style="font-size:1.8rem;font-weight:900;color:var(--rouge)">Fin du tour.</p>
+       <button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">OK</button>`
+    );
+    return;
+  }
+
+  // Succès -> on propose l'achat (on re-vérifie au cas où)
+  const price = boardData[pos].price;
+  if (window.teams[idx].capital < price) {
+    window.openModal(
+      "⚠️ ACHAT IMPOSSIBLE",
+      `<p style="font-size:1.5rem">Vous n'avez plus assez de capital pour acheter.</p>
+       <button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">OK</button>`
+    );
+    return;
+  }
+
+  window.openModal(
+    "✅ RÉPONSE JUSTE",
+    `<p style="font-size:1.6rem">Vous pouvez acheter <b>1 part</b> de <b>${boardData[pos].name}</b> pour <b>${price}€</b>.</p>
+     <button class="btn-action" style="background:var(--vert)" onclick="window.buyShareAfterQuiz(${idx}, ${pos})">ACHETER LA PART</button>
+     <button class="btn-action" style="background:#64748b" onclick="window.nextTurn()">Ne pas acheter (fin du tour)</button>`
+  );
+};
+
+window.buyShareAfterQuiz = (idx, pos) => {
+  window.buyShare(idx, pos);
+};
+
+
+
+  window.negoStep1 = (att, pos, def) => {
+  const student = getRandomStudent(att);
+
+  window.openModal(
+    "⚠️ OPA",
+    `<p style="font-size:1.8rem">L'offre sera faite par :</p>
+     <div class="student-badge">👉 ${student}</div>
+     <button class="btn-action" style="background:var(--vert)" onclick="window.launchNego1(${att}, ${def}, ${pos})">PRÊT ➤</button>`
+  );
+};
+
+window.launchNego1 = (att, def, pos) => {
+  const q = ensureQuestionOrPrompt();
+  if (!q) return;
+
+  window.openModal(
+    "NÉGO ATTAQUE",
+    `<div id="timer-val" class="timer-box">30s</div>
+     <div class="quiz-box">${q}</div>
+     <button class="btn-action" style="background:var(--vert)" onclick="window.negoMakeOffer(${att}, ${def}, ${pos})">JUSTE</button>
+     <button class="btn-action" style="background:var(--rouge)" onclick="window.negoFailed()">FAUX</button>`
+  );
+
+  window.startQTimer(30, () => window.negoFailed());
+};
+
+window.negoFailed = () => {
+  clearInterval(window.questionTimer);
+  window.openModal(
+    "ÉCHEC ❌",
+    `<p style="font-size:2rem;color:red;font-weight:900;">Tour terminé.</p>
+     <button class="btn-action" onclick="window.nextTurn()">OK</button>`
+  );
+};
+
+window.negoMakeOffer = (att, def, pos) => {
+  clearInterval(window.questionTimer);
+
+  const prixPart = boardData[pos].price;
+  const minimum = Math.ceil(prixPart * 0.30);
+
+  window.openModal(
+    "OFFRE",
+    `<p style="font-size:1.8rem">Montant du rachat ?</p>
+     <input 
+       type="number"
+       id="offer-val"
+       placeholder="Montant min. ${minimum}€"
+       style="width:100%;padding:15px;font-size:1.8rem;color:#111;"
+       min="${minimum}"
+       step="1"
+     >
+     <button class="btn-action" style="background:#f59e0b" onclick="window.negoStep3(${att}, ${def}, ${pos})">
+       Valider
+     </button>`
+  );
+};
+
+
+window.negoStep3 = (att, def, pos) => {
+  const raw = document.getElementById('offer-val')?.value ?? "";
+  const amt = parseInt(raw, 10);
+
+  const prixPart = boardData[pos].price;
+  const minimum = Math.ceil(prixPart * 0.30);
+
+  if (!Number.isFinite(amt) || amt <= 0) {
+    alert("⚠️ Entrez un montant valide.");
+    return;
+  }
+
+  if (amt < minimum) {
+    alert(`⚠️ Offre trop basse.\nMinimum requis : ${minimum}€ (30% du prix de la part).`);
+    return;
+  }
+
+  const student = getRandomStudent(def);
+
+  window.openModal(
+    "⚠️ DÉFENSE",
+    `<p style="font-size:1.8rem">La défense pour l'équipe ${window.teams[def].name} :</p>
+     <div class="student-badge">👉 ${student}</div>
+     <button class="btn-action" style="background:var(--vert)" onclick="window.launchNego3(${att}, ${def}, ${pos}, ${amt})">PRÊT ➤</button>`
+  );
+};
+
+
+
+  window.launchNego3 = (att, def, pos, amt) => {
+    const q = ensureQuestionOrPrompt();
+    if (!q) return;
+
+    window.openModal("NÉGO DÉFENSE",
+      `<div id="timer-val" class="timer-box">30s</div>
+       <div class="quiz-box">${q}</div>
+       <button class="btn-action" style="background:var(--vert)" onclick="window.negoChoice(${att}, ${def}, ${pos}, ${amt})">JUSTE</button>
+       <button class="btn-action" style="background:var(--rouge)" onclick="window.negoForce(${att}, ${def}, ${pos}, ${amt})">FAUX</button>`
+    );
+    window.startQTimer(30, () => window.negoForce(att, def, pos, amt));
+  };
+
+  window.negoChoice = (att, def, pos, amt) => {
+    clearInterval(window.questionTimer);
+    window.openModal("DÉCISION", `<p style="font-size:1.8rem">Acceptez-vous ${amt}€ ?</p><button class="btn-action" style="background:var(--vert)" onclick="window.execTrade(${att}, ${def}, ${pos}, ${amt})">OUI</button><button class="btn-action" style="background:var(--rouge)" onclick="window.nextTurn()">NON</button>`);
+  };
+
+  window.negoForce = (att, def, pos, amt) => {
+    clearInterval(window.questionTimer);
+    window.openModal("FORCÉ ⚠️", `<p style="font-size:1.5rem">Vente forcée pour ${amt}€.</p><button class="btn-action" onclick="window.execTrade(${att}, ${def}, ${pos}, ${amt})">OK</button>`);
+  };
+
+  window.execTrade = (b, s, p, amt) => {
+    window.teams[b].capital -= amt; window.teams[s].capital += amt;
+    const arr = window.corporateShares[p];
+    arr.splice(arr.indexOf(s), 1); arr.push(b);
+    window.nextTurn();
+  };
+
+  window.updateUI = () => {
+    document.getElementById('team-status-container').innerHTML = window.teams.map((t, i) =>
+      `<div class="team-card ${i === window.currentTurn ? 'active' : ''} ${t.prison > 0 ? 'jail' : ''}" style="border-left-color:${t.color}">
+        <b>${t.name}</b><br>
+        <span class="team-cap">${t.capital}€</span>
+        ${i === window.currentTurn ? `<button class="btn-roll" onclick="window.rollDice(${i})">🎲 Lancer le dé</button>` : ''}
+      </div>`
+    ).join('');
+
+    document.getElementById('current-team-display').innerText = window.teams[window.currentTurn].name;
+    document.getElementById('current-team-display').style.color = window.teams[window.currentTurn].color;
+    document.getElementById('pot-amount').innerText = window.communityPot + " €";
+
+    for(let i=0; i<40; i++) {
+      const el = document.getElementById(`shares-${i}`);
+      if(el) {
+        el.innerHTML = '';
+        for(let k=0; k<3; k++) {
+          const dot = document.createElement('div');
+          dot.className='share-slot';
+          if(window.corporateShares[i][k] !== undefined) {
+            dot.style.backgroundColor = window.teams[window.corporateShares[i][k]].color;
+            dot.style.borderColor = "white";
+          }
+          el.appendChild(dot);
+        }
+      }
+    }
+  };
+
+  window.openModal = (t, b) => {
+    document.getElementById('modal-title').innerText = t;
+    document.getElementById('modal-body').innerHTML = b;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+  };
+
+  window.closeModal = () => {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    clearInterval(window.questionTimer);
+  };
+
+ window.nextTurn = () => {
+  window.currentTurn = (window.currentTurn + 1) % 4;
+  window.updateUI();
+  window.closeModal();
+
+  // 🔥 Vérification faillite BLOQUANTE
+  if (isBankrupt(window.currentTurn)) {
+    startBankruptcyTurn(window.currentTurn);
+    return;
+  }
+
+  // 💰 liquidation optionnelle (<=500€)
+  checkOptionalLiquidationAtTurnStart();
+};
+
+
+
+window.showRecap = (i) => {
+  // Si liquidation active : clic sur une entreprise = tentative de vente
+  if (window.liquidationMode && window.currentTurn === window.liquidationTeamIdx) {
+    return window.handleLiquidationCaseClick(i);
+  }
+
+  // comportement normal : recap
+  const s = window.corporateShares[i]; 
+  let t = s.length ? "" : "Libre";
+  window.teams.forEach((tm, idx) => {
+    const c = s.filter(x => x === idx).length;
+    if(c>0) t+=`<p style="font-size:1.3rem">${tm.name}: <b>${c}</b> part(s)</p>`;
+  });
+  window.openModal(boardData[i].name, t);
+};
+</script>
